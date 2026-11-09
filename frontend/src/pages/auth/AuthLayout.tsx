@@ -1,13 +1,20 @@
+import { ArrowLeft } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
+import { Link } from 'react-router'
 import { Button, ErrorNote } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 
 export function AuthLayout({ title, subtitle, children, footer }: { title: string; subtitle: string; children: ReactNode; footer: ReactNode }) {
   return (
-    <div className="flex min-h-dvh items-center justify-center px-4 py-10">
+    <div className="relative flex min-h-dvh items-center justify-center px-4 py-16">
+      <Link to="/" className="absolute top-5 left-5 flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-fg">
+        <ArrowLeft className="size-4" /> Back to home
+      </Link>
       <div className="w-full max-w-sm animate-enter">
         <div className="mb-8 flex flex-col items-center text-center">
-          <img src="/favicon.svg" alt="" className="mb-4 size-10" />
+          <Link to="/" aria-label="Coop home" className="mb-4 transition-transform hover:-rotate-6">
+            <img src="/favicon.svg" alt="" className="size-10" />
+          </Link>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-1 text-sm text-muted">{subtitle}</p>
         </div>

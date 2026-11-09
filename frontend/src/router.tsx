@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType } from 'react'
-import { createBrowserRouter, isRouteErrorResponse, Navigate, Outlet, useRouteError } from 'react-router'
+import { createBrowserRouter, isRouteErrorResponse, Outlet, useRouteError } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
 import { RequireAuth, RequireGuest, RequireOrganisation } from '@/components/layout/guards'
 import { PageSkeleton } from '@/components/ui'
@@ -40,6 +40,8 @@ export const router = createBrowserRouter([
           { path: '/signup', element: page(() => import('@/pages/auth/SignupPage')) },
         ],
       },
+      // Public marketing page; CTAs lead to /signup and /login.
+      { path: '/', element: page(() => import('@/pages/landing/LandingPage')) },
       { path: '/auth/callback', element: page(() => import('@/pages/auth/AuthCallbackPage')) },
       {
         element: <RequireAuth />,
@@ -59,7 +61,6 @@ export const router = createBrowserRouter([
                   {
                     element: <AppShell />,
                     children: [
-                      { path: '/', element: <Navigate to="/dashboard" replace /> },
                       { path: '/dashboard', element: page(() => import('@/pages/DashboardPage')) },
                       { path: '/groups', element: page(() => import('@/pages/groups/GroupsPage')) },
                       {

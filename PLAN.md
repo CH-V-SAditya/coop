@@ -257,6 +257,7 @@ Every AI output lands in `ai_suggestions` (`pending` → `accepted`/`rejected` �
 - **Very light, smooth animations** (CSS transitions and keyframes only, and they respect `prefers-reduced-motion`).
 - **Light and dark themes** (system default plus a toggle). _Colour palette: to be decided with the product owner._
 - **Sidebar** navigation.
+- **Landing page** (`/`): stop-motion style reveals, smooth (inertial) scrolling, a hands-on demo of the hybrid blocker flow, a feature card slider, and calls to action that lead to sign up and sign in.
 - Authentication: **email and password** plus **Google OAuth**.
 - **Profile**: personal details, and inviting other people.
 - **Group creation**: name plus a common goal or task.
@@ -315,6 +316,7 @@ The code is split into two folders: **`frontend/`** and **`backend/`**.
 | Email + password login | 1 | ✅ |
 | Google OAuth login | 1 | ✅ (needs Google provider configured in Supabase) |
 | Sidebar, light and dark theme, lazy loading, light animations | 1 | ✅ |
+| Public landing page: hero, interactive demo of the blocker flow, feature slider, FAQ; links to sign up / sign in | 1 | ✅ |
 | Profile (details) | 1 | ✅ |
 | Full database schema + migrations + RLS | 1 | ✅ |
 | Create organisation | 2 | ✅ |
