@@ -1,8 +1,9 @@
+import { useEffect } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { ErrorNote, Spinner } from '@/components/ui'
-import { isAuthConfigured } from '@/lib/supabase'
+import { ApiError } from '@/lib/api'
 import { useMe } from '@/lib/queries'
-import { useAuth } from '@/providers/auth'
+import { useActor } from '@/providers/actor'
 
 export function FullScreenSpinner() {
   return (
@@ -12,35 +13,28 @@ export function FullScreenSpinner() {
   )
 }
 
-/** Signed-in users only. Remembers where they were going. */
-export function RequireAuth() {
-  const { session, loading } = useAuth()
+/** Prototype mode (no sign-in): you must pick who you are acting as. Remembers where you were going. */
+export function RequireActor() {
+  const { actorId } = useActor()
   const location = useLocation()
-  if (!isAuthConfigured) return <SetupNotice />
-  if (loading) return <FullScreenSpinner />
-  if (!session) {
+  if (!actorId) {
     const next = location.pathname + location.search
-    return <Navigate to={next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`} replace />
+    return <Navigate to={`/welcome?next=${encodeURIComponent(next)}`} replace />
   }
   return <Outlet />
 }
 
-/** Signed-out users only (login / signup). */
-export function RequireGuest() {
-  const { session, loading } = useAuth()
-  const location = useLocation()
-  if (loading) return <FullScreenSpinner />
-  if (session) {
-    const next = new URLSearchParams(location.search).get('next')
-    return <Navigate to={next && next.startsWith('/') ? next : '/dashboard'} replace />
-  }
-  return <Outlet />
-}
-
-/** Users must belong to an organisation before using the workspace. */
+/** People must belong to an organisation before using the workspace. */
 export function RequireOrganisation() {
   const { data, isLoading, error } = useMe()
-  if (isLoading) return <FullScreenSpinner />
+  const { setActor } = useActor()
+  // The remembered person no longer exists (e.g. the database was reset): choose again.
+  const personGone = error instanceof ApiError && (error.status === 404 || error.code === 'NO_ACTOR')
+  useEffect(() => {
+    if (personGone) setActor(null)
+  }, [personGone, setActor])
+
+  if (isLoading || personGone) return <FullScreenSpinner />
   if (error)
     return (
       <div className="mx-auto max-w-md p-8">
@@ -49,16 +43,4 @@ export function RequireOrganisation() {
     )
   if (!data?.memberships.length) return <Navigate to="/onboarding" replace />
   return <Outlet />
-}
-
-function SetupNotice() {
-  return (
-    <div className="mx-auto max-w-lg space-y-3 p-10 text-sm">
-      <h1 className="text-lg font-semibold">Coop is not configured yet</h1>
-      <p className="text-muted">
-        Copy <code>frontend/.env.example</code> to <code>frontend/.env.local</code> and set <code>VITE_SUPABASE_URL</code>,{' '}
-        <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> and <code>VITE_API_URL</code>. See the README for the full setup.
-      </p>
-    </div>
-  )
 }

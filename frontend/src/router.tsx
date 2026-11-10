@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ComponentType } from 'react'
 import { createBrowserRouter, isRouteErrorResponse, Outlet, useRouteError } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
-import { RequireAuth, RequireGuest, RequireOrganisation } from '@/components/layout/guards'
+import { RequireActor, RequireOrganisation } from '@/components/layout/guards'
 import { PageSkeleton } from '@/components/ui'
 import { OrgProvider } from '@/providers/org'
 
@@ -33,18 +33,12 @@ export const router = createBrowserRouter([
   {
     errorElement: <RootError />,
     children: [
+      // Public marketing page; CTAs lead to /welcome.
+      { path: '/', element: page(() => import('@/features/landing/LandingPage')) },
+      // Prototype mode (no sign-in): choose or create the person you act as.
+      { path: '/welcome', element: page(() => import('@/features/people/ChoosePersonPage')) },
       {
-        element: <RequireGuest />,
-        children: [
-          { path: '/login', element: page(() => import('@/pages/auth/LoginPage')) },
-          { path: '/signup', element: page(() => import('@/pages/auth/SignupPage')) },
-        ],
-      },
-      // Public marketing page; CTAs lead to /signup and /login.
-      { path: '/', element: page(() => import('@/pages/landing/LandingPage')) },
-      { path: '/auth/callback', element: page(() => import('@/pages/auth/AuthCallbackPage')) },
-      {
-        element: <RequireAuth />,
+        element: <RequireActor />,
         children: [
           {
             element: (
@@ -53,27 +47,26 @@ export const router = createBrowserRouter([
               </OrgProvider>
             ),
             children: [
-              { path: '/invite/:token', element: page(() => import('@/pages/InvitePage')) },
-              { path: '/onboarding', element: page(() => import('@/pages/OnboardingPage')) },
+              { path: '/onboarding', element: page(() => import('@/features/onboarding/OnboardingPage')) },
               {
                 element: <RequireOrganisation />,
                 children: [
                   {
                     element: <AppShell />,
                     children: [
-                      { path: '/dashboard', element: page(() => import('@/pages/DashboardPage')) },
-                      { path: '/groups', element: page(() => import('@/pages/groups/GroupsPage')) },
+                      { path: '/dashboard', element: page(() => import('@/features/dashboard/DashboardPage')) },
+                      { path: '/groups', element: page(() => import('@/features/groups/GroupsPage')) },
                       {
                         path: '/groups/:groupId',
-                        element: page(() => import('@/pages/groups/GroupLayout')),
+                        element: page(() => import('@/features/groups/GroupLayout')),
                         children: [
-                          { index: true, element: page(() => import('@/pages/groups/BoardPage')) },
-                          { path: 'members', element: page(() => import('@/pages/groups/MembersPage')) },
+                          { index: true, element: page(() => import('@/features/groups/BoardPage')) },
+                          { path: 'members', element: page(() => import('@/features/groups/MembersPage')) },
                         ],
                       },
-                      { path: '/tasks/:taskId', element: page(() => import('@/pages/task/TaskPage')) },
-                      { path: '/profile', element: page(() => import('@/pages/ProfilePage')) },
-                      { path: '*', element: page(() => import('@/pages/NotFoundPage')) },
+                      { path: '/tasks/:taskId', element: page(() => import('@/features/tasks/TaskPage')) },
+                      { path: '/profile', element: page(() => import('@/features/profile/ProfilePage')) },
+                      { path: '*', element: page(() => import('@/features/not-found/NotFoundPage')) },
                     ],
                   },
                 ],

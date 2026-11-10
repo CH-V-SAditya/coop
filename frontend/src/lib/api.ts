@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { readActor } from './actor'
 
 const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000/api/v1').replace(/\/$/, '')
 
@@ -13,16 +13,15 @@ export class ApiError extends Error {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token
-  if (!token) throw new ApiError(401, 'You are signed out')
+  const actor = readActor()
 
   let res: Response
   try {
     res = await fetch(`${API_URL}${path}`, {
       method,
       headers: {
-        Authorization: `Bearer ${token}`,
+        // Prototype mode (no sign-in): who we are acting as.
+        ...(actor ? { 'X-Coop-Actor': actor } : {}),
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,

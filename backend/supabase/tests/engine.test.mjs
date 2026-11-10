@@ -1,12 +1,25 @@
-// Applies Coop migrations to PGlite with Supabase stubs and runs an engine scenario.
+// Runs the task-engine scenario against either:
+//   - PGlite (default): applies Supabase stubs + migrations in memory, or
+//   - a real Postgres when DATABASE_URL is set (already migrated, e.g. by
+//     `node scripts/local-stack.mjs db --reset`). One session, like PGlite.
 import { PGlite } from '@electric-sql/pglite';
+import pg from 'pg';
 import { citext } from '@electric-sql/pglite/contrib/citext';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const MIG = process.argv[2];
-const db = new PGlite({ extensions: { citext, pgcrypto } });
+const REAL_PG = Boolean(process.env.DATABASE_URL) || process.argv.includes('--pg');
+const PG_URL = process.env.DATABASE_URL ?? 'postgres://postgres@localhost:54329/coop';
+let db;
+if (REAL_PG) {
+  const client = new pg.Client({ connectionString: PG_URL });
+  await client.connect();
+  db = { query: (text, params) => client.query(text, params), exec: (text) => client.query(text), close: () => client.end() };
+} else {
+  db = new PGlite({ extensions: { citext, pgcrypto } });
+}
 
 const STUBS = `
 create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
@@ -40,8 +53,9 @@ async function expectErr(label, p, needle) {
 }
 function check(label, cond, extra = '') { (cond ? ok : bad)(label + (extra ? ` (${extra})` : '')); }
 
-await db.exec(STUBS);
-for (const f of fs.readdirSync(MIG).sort()) {
+if (REAL_PG) console.log('Real Postgres:', (await db.query('select version()')).rows[0].version.split(',')[0]);
+else await db.exec(STUBS);
+for (const f of REAL_PG ? [] : fs.readdirSync(MIG).sort()) {
   try { await db.exec(fs.readFileSync(path.join(MIG, f), 'utf8')); console.log('applied', f); }
   catch (e) { console.log('FAILED', f, '\n', e.message, e.position ?? ''); process.exit(1); }
 }
@@ -150,5 +164,48 @@ check('group admin can upload context doc', st.length === 1);
 await expectErr('member without permission cannot upload',
   as(users.b, `insert into storage.objects (bucket_id, name, owner) values ('context-documents', $1, $2)`, [`${grp.id}/x.pdf`, users.b]), 'row-level security');
 
+console.log('\nPrototype mode without sign-in');
+// Simulates PostgREST: one transaction per request; set the request headers,
+// switch role, run the pre-request hook, then the query.
+async function viaApi(role, actor, sql, params = []) {
+  const headers = JSON.stringify(actor ? { 'x-coop-actor': actor } : {});
+  await db.exec(`reset role; select set_config('request.jwt.claim.sub', '', false); begin;
+    select set_config('request.headers', '${headers}', true); set local role ${role}; select public.coop_pre_request();`);
+  try {
+    const rows = (await db.query(sql, params)).rows;
+    await db.exec('commit;');
+    return rows;
+  } catch (e) {
+    await db.exec('rollback;');
+    throw e;
+  } finally {
+    await db.exec('reset role;');
+  }
+}
+const [{ uid: actorUid }] = await viaApi('service_role', users.a, `select auth.uid() as uid`);
+check('backend (service_role) can act as a person', actorUid === users.a);
+const [{ uid: anonUid }] = await viaApi('anon', users.a, `select auth.uid() as uid`);
+check('public key cannot act as anyone', anonUid === null);
+const [{ uid: authUid }] = await viaApi('authenticated', users.a, `select auth.uid() as uid`);
+check('signed-in role cannot use the actor header', authUid === null);
+await expectErr('acting person is not trusted from the public key',
+  viaApi('anon', users.a, `select * from public.create_person('Eve')`), 'permission denied');
+
+const [eve] = await viaApi('service_role', null, `select * from public.create_person('Eve Example', 'Eve@Example.com', 'Designer')`);
+check('person created without an auth account', !!eve?.id && eve.email === 'eve@example.com');
+await expectErr('person needs a name', viaApi('service_role', null, `select * from public.create_person(' ')`), 'at least 2');
+await expectErr('only org admins add people',
+  viaApi('service_role', users.b, `select * from public.add_organisation_member($1, $2)`, [org.id, eve.id]), 'owners and admins');
+const [eveMember] = await viaApi('service_role', users.a, `select * from public.add_organisation_member($1, $2)`, [org.id, eve.id]);
+check('org owner adds the new person', eveMember?.user_id === eve.id && eveMember.role === 'member');
+const [again] = await viaApi('service_role', users.a, `select * from public.add_organisation_member($1, $2)`, [org.id, eve.id]);
+check('adding twice is a no-op', again.id === eveMember.id);
+const [eveInGroup] = await viaApi('service_role', users.a,
+  `select * from public.add_group_member($1, $2, 'member', 'Design')`, [grp.id, eveMember.id]);
+check('new person can join a group with a role', eveInGroup?.functional_role === 'Design');
+const [eveOrg] = await viaApi('service_role', eve.id, `select * from public.create_organisation('Eve Studio')`);
+check('a new person can create an organisation as themselves', eveOrg?.created_by === eve.id);
+
 console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL CHECKS PASSED');
+await db.close?.();
 process.exit(failures ? 1 : 0);

@@ -18,12 +18,12 @@ export function Button({ variant = 'primary', size = 'md', loading, className, c
       {...props}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg font-medium whitespace-nowrap transition-all duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50',
         size === 'sm' ? 'h-8 px-3 text-sm' : 'h-10 px-4 text-sm',
-        variant === 'primary' && 'bg-accent text-accent-fg shadow-sm hover:brightness-110',
-        variant === 'secondary' && 'border border-line bg-surface text-fg hover:bg-surface-2',
-        variant === 'ghost' && 'text-muted hover:bg-surface-2 hover:text-fg',
-        variant === 'danger' && 'bg-danger text-white hover:brightness-110',
+        variant === 'primary' && 'bg-accent text-accent-fg shadow-sm enabled:hover:bg-accent-hover enabled:hover:shadow-md enabled:hover:shadow-accent/25',
+        variant === 'secondary' && 'border border-line bg-surface text-fg enabled:hover:border-fg/25 enabled:hover:bg-surface-2',
+        variant === 'ghost' && 'text-muted enabled:hover:bg-surface-2 enabled:hover:text-fg',
+        variant === 'danger' && 'bg-danger text-white shadow-sm enabled:hover:brightness-110 enabled:hover:shadow-md',
         className,
       )}
     >

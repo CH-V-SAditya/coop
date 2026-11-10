@@ -1,10 +1,10 @@
-import { Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Monitor, Moon, Sun, Users, X } from 'lucide-react'
+import { ArrowLeftRight, Building2, ChevronsUpDown, LayoutDashboard, Menu, Monitor, Moon, Sun, Users, X } from 'lucide-react'
 import { Suspense, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { Avatar, PageSkeleton } from '@/components/ui'
 import { useGroups, useMe } from '@/lib/queries'
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/providers/auth'
+import { useActor } from '@/providers/actor'
 import { useOrg } from '@/providers/org'
 import { useTheme, type Theme } from '@/providers/theme'
 
@@ -175,7 +175,8 @@ function ThemeToggle() {
 
 function UserMenu() {
   const { data } = useMe()
-  const { signOut } = useAuth()
+  const { setActor } = useActor()
+  const navigate = useNavigate()
   const profile = data?.profile
   return (
     <div className="flex items-center gap-2 rounded-lg px-1 py-1">
@@ -186,8 +187,15 @@ function UserMenu() {
           <span className="block truncate text-xs text-muted">{profile?.email}</span>
         </span>
       </NavLink>
-      <button onClick={signOut} title="Sign out" className="rounded-md p-2 text-muted transition-colors hover:bg-surface-2 hover:text-fg">
-        <LogOut className="size-4" />
+      <button
+        onClick={() => {
+          setActor(null)
+          navigate('/welcome')
+        }}
+        title="Switch person"
+        className="rounded-md p-2 text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+      >
+        <ArrowLeftRight className="size-4" />
       </button>
     </div>
   )

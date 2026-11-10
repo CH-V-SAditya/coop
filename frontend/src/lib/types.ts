@@ -7,7 +7,7 @@ export type GroupRole = 'admin' | 'member'
 
 export type Profile = {
   id: string
-  email: string
+  email: string | null
   full_name: string | null
   avatar_url: string | null
   job_title: string | null
@@ -195,16 +195,15 @@ export type OrgMember = {
   role: OrgRole
   title: string | null
   user_id: string
-  profile: { full_name: string | null; email: string; avatar_url: string | null; job_title: string | null } | null
+  profile: { full_name: string | null; email: string | null; avatar_url: string | null; job_title: string | null } | null
 }
 
-export type Invitation = {
+/** Prototype mode (no sign-in): a person you can act as. */
+export type Person = {
   id: string
-  email: string
-  org_role: OrgRole
-  group_role: GroupRole
-  functional_role: string | null
-  expires_at: string
-  invite_url: string
-  group: { id: string; name: string } | null
+  full_name: string | null
+  email: string | null
+  job_title: string | null
+  avatar_url: string | null
+  created_at: string
 }

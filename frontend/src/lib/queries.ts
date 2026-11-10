@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { api } from './api'
-import type { BoardTask, GroupDetail, GroupSummary, Invitation, Me, MyTask, OrgMember, TaskDetail } from './types'
+import type { BoardTask, GroupDetail, GroupSummary, Me, MyTask, OrgMember, Person, TaskDetail } from './types'
 
 export const keys = {
   me: ['me'] as const,
@@ -10,7 +10,7 @@ export const keys = {
   board: (groupId: string) => ['board', groupId] as const,
   task: (taskId: string) => ['task', taskId] as const,
   orgMembers: (orgId: string) => ['org-members', orgId] as const,
-  invitations: (orgId: string) => ['invitations', orgId] as const,
+  people: ['people'] as const,
 }
 
 export const useMe = () => useQuery({ queryKey: keys.me, queryFn: () => api.get<Me>('/me') })
@@ -41,12 +41,8 @@ export const useOrgMembers = (orgId?: string) =>
     enabled: Boolean(orgId),
   })
 
-export const useInvitations = (orgId?: string, enabled = true) =>
-  useQuery({
-    queryKey: keys.invitations(orgId ?? ''),
-    queryFn: () => api.get<Invitation[]>(`/organisations/${orgId}/invitations`),
-    enabled: Boolean(orgId) && enabled,
-  })
+/** Prototype mode (no sign-in): everyone you can act as or add to a team. */
+export const usePeople = () => useQuery({ queryKey: keys.people, queryFn: () => api.get<Person[]>('/people') })
 
 /**
  * A mutation that invalidates the given query keys on success.

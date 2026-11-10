@@ -257,9 +257,9 @@ Every AI output lands in `ai_suggestions` (`pending` → `accepted`/`rejected` �
 - **Very light, smooth animations** (CSS transitions and keyframes only, and they respect `prefers-reduced-motion`).
 - **Light and dark themes** (system default plus a toggle). _Colour palette: to be decided with the product owner._
 - **Sidebar** navigation.
-- **Landing page** (`/`): stop-motion style reveals, smooth (inertial) scrolling, a hands-on demo of the hybrid blocker flow, a feature card slider, and calls to action that lead to sign up and sign in.
-- Authentication: **email and password** plus **Google OAuth**.
-- **Profile**: personal details, and inviting other people.
+- **Landing page** (`/`): stop-motion style reveals, smooth (inertial) scrolling, a hands-on demo of the hybrid blocker flow, a feature card slider, and calls to action that lead to the app ("Who are you?" while sign-in is paused).
+- Authentication: **email and password** plus **Google OAuth**. ⏸ _Paused for the prototype (see §12.1): you pick who you are instead._
+- **Profile**: personal details, and adding other people.
 - **Group creation**: name plus a common goal or task.
 - **Kanban board** per group (Yet to start / In progress / Done).
 - **Personal view** (my tasks) and **manager view** (everyone's tasks in the group). This lists *tasks done*, never activity tracking.
@@ -275,14 +275,25 @@ The code is split into two folders: **`frontend/`** and **`backend/`**.
 
 | Layer | Choice |
 | --- | --- |
-| Frontend (`frontend/`) | React 19 + Vite, React Router (every page lazy-loaded), TanStack Query, Tailwind CSS v4, `lucide-react`. It uses Supabase **only for sign-in**. All data goes through the backend API. |
-| Backend (`backend/`) | Next.js 16 **REST API** (`/api/v1/*`, route handlers only): bearer-token auth, input validation with `zod`, Postgres error → HTTP status mapping, CORS for the frontend. The same API will serve bring-your-own AI agents later. |
+| Frontend (`frontend/`) | React 19 + Vite, React Router (every page lazy-loaded), TanStack Query, Tailwind CSS v4, `lucide-react`. All data goes through the backend API; the frontend does not talk to Supabase. Code is organised by feature (`src/features/<module>`). |
+| Backend (`backend/`) | Next.js 16 **REST API** (`/api/v1/*`, route handlers only): acting-person header (prototype mode, §12.1), input validation with `zod`, Postgres error → HTTP status mapping, CORS for the frontend. The same API will serve bring-your-own AI agents later. |
 | Task engine | **Postgres functions** (`transition_task`, `add_task_dependency`, `report_blocker`, …). They are authoritative, atomic and write events in the same transaction. The backend mirrors the transition rules only to *display* the actions a person may take. |
 | Database | **Supabase Postgres** with Row Level Security on every table |
-| Auth | Supabase Auth (email/password, Google OAuth), cookie sessions via `@supabase/ssr` |
+| Auth | ⏸ Paused (prototype mode, §12.1). Planned: Supabase Auth (email/password, Google OAuth) with the user's JWT forwarded by the API. |
 | Storage | Supabase Storage bucket `context-documents` (private, path `<group_id>/…`) |
 | Realtime | Supabase Realtime publication on tasks, events, messages and comments (UI wiring comes in a later phase) |
 | AI | Deferred. The schema is ready (`ai_suggestions`, `ai_agents`). |
+
+### 12.1 Prototype mode without sign-in (since 2026-11-10)
+
+Sign-in is switched off so the team can focus on features. There was no earlier version without sign-in to roll back to, so it was removed.
+
+- **Who you are:** the "Who are you?" screen (`/welcome`) lists people. You pick one or add yourself. The choice is remembered in the browser and sent to the API on every request in the `X-Coop-Actor` header. "Switch person" in the sidebar changes it, which is also how you test features from another team member's point of view.
+- **How Postgres knows:** the API calls Supabase with the server-only **secret key** and the actor header. Migration `…000800` installs a PostgREST pre-request hook that, for secret-key requests only, makes `auth.uid()` return that person. Every engine function and permission check written for real sign-in still runs unchanged. The public (publishable) key cannot use the header.
+- **People without accounts:** `profiles` no longer requires an `auth.users` row. `create_person` and `add_organisation_member` add people directly; invitations are removed from the API and UI for now (the table stays).
+- ⚠️ **No security while in this mode:** anyone who can reach the API can act as anyone. Keep real data out of the database.
+
+**Turning sign-in back on (Phase 12):** unset `pgrst.db_pre_request` on the `authenticator` role; re-add the `profiles.id → auth.users` foreign key (`not valid` first, then link or remove people created without accounts); have the API forward each user's JWT with the publishable key again instead of the secret key; restore the login, signup, OAuth callback and invitation screens and endpoints from git history (commit `4776c18` and earlier).
 
 ---
 
@@ -290,7 +301,7 @@ The code is split into two folders: **`frontend/`** and **`backend/`**.
 
 | Phase | Feature | Outcome | Status |
 | --- | --- | --- | --- |
-| **Phase 1** | Foundation: separate `frontend/` (React + Vite) and `backend/` (Next.js REST API) folders, complete database schema and migrations (all entities, enums, RLS, storage), app shell (sidebar, light and dark theme, lazy loading, light animations), auth (email/password + Google OAuth), profile page | A secure, themed app that users can sign up for and log into. The full data model, with every relationship, exists in Postgres. | ✅ Done |
+| **Phase 1** | Foundation: separate `frontend/` (React + Vite) and `backend/` (Next.js REST API) folders, complete database schema and migrations (all entities, enums, RLS, storage), app shell (sidebar, light and dark theme, lazy loading, light animations), auth (email/password + Google OAuth), profile page | A secure, themed app that users can sign up for and log into. The full data model, with every relationship, exists in Postgres. | ✅ Done (sign-in paused since 2026-11-10, see §12.1) |
 | **Phase 2** | Organisations, groups and membership: onboarding (create organisation), create groups with a goal, invitations (organisation and group), group roles, functional roles, per-member permissions | A manager can create an organisation and a group, set a goal, invite people and control what each member may do. | ✅ Done |
 | **Phase 3** | Task engine and Kanban: manual task creation, subtasks, owner and reviewer assignment, state machine transitions, progress updates, immutable event history, Kanban board (3 columns), task detail view | Teams can run work end to end on a board. Every state change is validated by Postgres and recorded as an event. | ✅ Done |
 | **Phase 4** | Dependencies and blockers: finish-to-start links with cycle detection, waiting and eligibility indicators, first-class blockers (report, confirm, resolve, dismiss) with automatic blocked and unblocked transitions | Blockers become visible immediately, and downstream tasks know exactly what they are waiting for. | ✅ Done |
@@ -301,27 +312,31 @@ The code is split into two folders: **`frontend/`** and **`backend/`**.
 | **Phase 9** | AI layer II: discussion interpretation (potential blockers, progress and new-task suggestions), risk assessment, management progress summaries | Natural conversation turns into structured, confirmed task updates, and management gets AI status reports. | ⬜ Not yet started |
 | **Phase 10** | Bring-your-own AI agents: register agents (provider, model, endpoint, Vault secret), per-group and per-user scope, a public API for agents, then agentic workflows | Teams can use their own AI agents on Coop tasks. | ⬜ Not yet started |
 | **Phase 11** | Advanced scheduling and hardening: SS, FF and SF dependency types, notifications (email or in-app), deadline reminders, audit views, tests, performance and accessibility pass | Production-ready scheduling and reliability. | ⬜ Not yet started |
+| **Phase 12** | Turn sign-in back on: email/password and Google OAuth, invitations by link and email, remove prototype mode (§12.1) | Real accounts and private data. | ⬜ Not yet started (paused on purpose) |
 
 **How Phases 1 to 4 were verified (2026-11-10):**
 
 - All 7 migrations apply cleanly to Postgres 17 (PGlite). `npm run test:db` passes 40+ engine checks, covering the state machine, cycle detection, blockers, immutable events, RLS, column privileges and storage policies.
 - The backend and frontend both typecheck, lint and build.
 - The API was smoke-tested for health, the auth guard, CORS and SPA routing.
+- 2026-11-10, prototype mode: migration `…000800` applies cleanly and 11 new checks pass (acting as a person through the pre-request hook, the public key cannot use it, people without accounts, adding people). The "Who are you?" → onboarding flow was clicked through in Edge against a stand-in API with no page errors.
 - ⚠️ **Not yet run against a live Supabase project** (no Docker on the development machine). The first manual click-through after connecting Supabase is the remaining check.
 
 ### 13.1 Feature checklist
 
 | Feature | Phase | Status |
 | --- | --- | --- |
-| Email + password login | 1 | ✅ |
-| Google OAuth login | 1 | ✅ (needs Google provider configured in Supabase) |
+| Email + password login | 1 → 12 | ⏸ Paused (prototype mode) |
+| Google OAuth login | 1 → 12 | ⏸ Paused (prototype mode) |
+| "Who are you?" person picker and "Switch person" (prototype mode) | 1 | ✅ |
 | Sidebar, light and dark theme, lazy loading, light animations | 1 | ✅ |
-| Public landing page: hero, interactive demo of the blocker flow, feature slider, FAQ; links to sign up / sign in | 1 | ✅ |
+| Public landing page: hero, interactive demo of the blocker flow, feature slider, FAQ; links into the app | 1 | ✅ |
 | Profile (details) | 1 | ✅ |
 | Full database schema + migrations + RLS | 1 | ✅ |
 | Create organisation | 2 | ✅ |
 | Create group with goal | 2 | ✅ |
-| Invite people (organisation and group, link-based) | 2 | ✅ (email delivery not yet started; the invite link is copied) |
+| Add people directly to the organisation and groups (prototype mode) | 2 | ✅ |
+| Invite people by link or email | 2 → 12 | ⏸ Paused with sign-in |
 | Group admins, member permissions, functional roles | 2 | ✅ |
 | Role assigned when adding or inviting a member (empty = AI will infer) | 2 | ✅ (admin-assigned roles). AI inference ⬜ Phase 8 |
 | Manual task creation and subtasks | 3 | ✅ |
@@ -361,6 +376,8 @@ The code is split into two folders: **`frontend/`** and **`backend/`**.
 | 2026-11-10 | The API calls Postgres **as the user** (it forwards their JWT) instead of using a service key | RLS protects every request, even if there is a bug in the API |
 | 2026-11-10 | A functional role can be set when adding or inviting a member. An empty role becomes an AI suggestion that an admin approves. | Product owner request. The AI never overwrites a role an admin set. |
 | 2026-11-10 | Colour palette and detailed UI design deferred | The product owner will provide design input |
+| 2026-11-10 | Sign-in paused: prototype mode with a "Who are you?" picker. The API acts as the chosen person through a Postgres pre-request hook (§12.1). | Product owner request, to focus on features. No auth-free version existed to roll back to. The hook keeps every permission check working, so turning sign-in back on is small. |
+| 2026-11-10 | Frontend code is organised by feature (`frontend/src/features/<module>`), keeping the `frontend/` and `backend/` folder names | Product owner request: folder names follow the product's modules. Keeping the top-level names avoids reconfiguring Vercel and the Supabase GitHub integration. |
 
 ---
 
@@ -372,3 +389,59 @@ The code is split into two folders: **`frontend/`** and **`backend/`**.
 4. Should members be able to see tasks from other groups in the same organisation (cross-group dependencies)?
 5. Should invitations be sent by email (Supabase SMTP or Resend), or are copyable links enough for now?
 6. AI provider and model preferences for the built-in AI layer (Phase 8).
+
+---
+
+## 16. Master plan v2: Workspace Efficiency Manager (from 2026-11-10)
+
+The product owner's master development prompt replaces the phase plan in §13 from here on. Work goes **phase by phase**: build a phase, test it (happy paths, edge cases, failure cases), and only start the next phase once its tests pass. **The task engine is built before any new UI**, and no new UI work happens until the engine is done. A screen counts as complete only when it is wired to real backend behaviour.
+
+### 16.1 Decisions taken at the start of v2
+
+| Question | Decision |
+| --- | --- |
+| Blocker lifecycle | **Merged:** `reported` → `confirmed` (shown as "Open") → `in_resolution` → `resolved`, or `dismissed`. AI-detected blockers become AI suggestions; accepting one creates a blocker. `potential` is no longer used. |
+| Database access | **Keep the Supabase REST API with the secret key.** RLS is bypassed, so tenant isolation is enforced in the API and in the engine's SECURITY DEFINER functions, and proven with adversarial cross-tenant tests at the API level. |
+| Authentication timing | **Now, before the task engine** (spec Phase 2). Prototype mode (§12.1) is replaced: the API verifies the user's JWT and tells Postgres who is acting. |
+
+### 16.2 Phases
+
+| Phase | Scope | Exit criteria | Status |
+| --- | --- | --- | --- |
+| **v2-1** Discovery & architecture | Review the repo; gap analysis against the spec; decisions; test infrastructure plan | This section; local test database running | ✅ Done (2026-11-10) |
+| **v2-2** Foundation | Auth module (JWT verification, session expiry, disabled accounts, invitation lifecycle, organisation switching, profile, preferences, deactivation); structured errors, logging, correlation IDs; API test harness against the Supabase project | Auth test cases (spec §19.1) pass at the API level; first k6 baseline recorded | 🟡 In progress: database tests ✅; API tests wait for migration 800 on the Supabase project (§16.4) |
+| **v2-3** Task engine v2 | Contributors; expected outcome; optional projects; owner required from `ready` on; merged blocker lifecycle with resolution owner; cross-group dependencies with permission checks; readiness and downstream-impact functions; idempotency keys; member removal with reassignment; API-level tenant isolation | Spec §19.2–19.4 test cases pass; transition and dependency p95 measured with k6 | ⬜ Not yet started |
+| **v2-4** Collaboration & notifications | Group threads and replies, task discussions, mentions and task references, notifications (in-app, read/unread, grouping, preferences), realtime with resync | Spec §19.5 test cases pass | ⬜ Not yet started |
+| **v2-5** AI service | Python service; action extraction, blocker and dependency suggestions, suggestion review workflow, idempotency, retries, cost tracking, prompt-injection defences | Spec §19.6 test cases pass; core works with AI down | ⬜ Not yet started |
+| **v2-6** Hardening | Security tests, RLS and tenant verification, load tests at 100 / 1,000 / 10,000 VUs, accessibility, observability | Measured results in the performance report | ⬜ Not yet started |
+| **v2-7** Release readiness | Production migrations, secrets, backups, monitoring, rollback, smoke tests | Checklist signed off | ⬜ Not yet started |
+| **v2-UI** Delightful UI | Design system, board, task workspace, dashboards, interaction system (spec §3), built around the finished engine | Every screen backed by real API behaviour; Playwright + Web Vitals measured | ⬜ After v2-3 |
+
+### 16.3 Gap analysis: spec vs. current build
+
+| Spec requirement | Current state | Phase |
+| --- | --- | --- |
+| State machine, immutable events, atomic transitions, optimistic concurrency | ✅ Built and tested (Postgres functions, `version` column) | Re-verify in v2-3 |
+| Finish-to-start dependencies, cycle prevention | ✅ Built and tested | v2-3 (cross-group, impact) |
+| Readiness separate from status ("waiting on N") | ✅ `unmet_dependency_count` | v2-3 (approvals, notifications) |
+| Downstream impact calculation | ❌ Missing | v2-3 |
+| Contributors (many), expected outcome, projects | ❌ Missing (`acceptance_criteria` exists) | v2-3 |
+| Blockers with resolution owner, merged lifecycle | 🟡 Columns exist; lifecycle differs | v2-3 |
+| Member removal with reassignment | ❌ Missing | v2-3 |
+| Idempotency keys for important writes | ❌ Missing | v2-3 |
+| Tenant isolation | 🟡 Engine functions check membership; direct table reads through the secret key do not | v2-2 / v2-3 |
+| Auth: register, login, verify, reset, invitations, deactivation | ⏸ Removed for prototype mode; code is in git history | v2-2 |
+| Invitation expiry | 🐞 Accepting an expired invitation rolls back its own "expired" update | v2-2 |
+| Notifications, attachments, user preferences tables | ❌ Missing (`task_evidence` covers part of attachments) | v2-2 / v2-4 |
+| Group threads, mentions, task references | 🟡 `group_messages.reply_to_id` exists; no API | v2-4 |
+| AI suggestions with review workflow | 🟡 Table exists; statuses include `applied` | v2-5 |
+| Structured logs, correlation IDs, health checks | 🟡 Health route only | v2-2 |
+| k6 load tests, Playwright, performance report | 🟡 Report started (`docs/PERFORMANCE.md`); k6 v2.3.0 and Playwright available | Every phase |
+
+### 16.4 Test infrastructure
+
+- **Decision (2026-11-10): API and load tests run against the Supabase project itself**, not a local copy. Nothing extra is installed (no PostgREST, no Docker). Consequences, to be stated next to every result: (1) latency includes the round trip from the dev machine to Supabase (44–67 ms warm, measured); (2) the project's plan limits cap how much load can be applied, so the 1,000 and 10,000 virtual-user levels may not be reachable and will be reported as "not measured" if so; (3) tests write to the real database, so every test creates its own organisation with a `zz-test-` prefix and deletes it afterwards.
+- **Local Postgres** (`backend/scripts/local-stack.mjs db`): a disposable PostgreSQL 17 cluster in `backend/.local/pg` on port 54329, used only for the database-level engine tests. It never touches other Postgres servers on the machine. The PostgREST part of that script is unused.
+- **Database tests:** `npm run test:db` (PGlite, in memory) and `npm run test:db:pg` (real Postgres 17, rebuilt before every run). Both pass.
+- **API tests:** Vitest against the backend running locally and connected to the Supabase project. Test users are created through Supabase Auth's admin API (secret key) and sign in for real, so the tokens are genuine. Email delivery (sign-up confirmation, password reset) is checked by hand.
+- **Load tests:** k6. **Browser tests:** Playwright with the installed Edge.

@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 import { z, type ZodType } from "zod";
-import { createUserClient } from "@/lib/supabase/server";
+import { ACTOR_HEADER, createActorClient } from "@/lib/supabase/server";
 
 export class ApiError extends Error {
   constructor(
@@ -77,41 +77,56 @@ function assertUuidParams(params: Record<string, string>) {
   }
 }
 
-async function authenticate(req: NextRequest) {
-  const header = req.headers.get("authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  if (!token) throw new ApiError(401, "Missing bearer token");
-
-  const supabase = createUserClient(token);
-  const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims?.sub) throw new ApiError(401, "Invalid or expired session");
-
-  return {
-    supabase,
-    user: { id: data.claims.sub, email: (data.claims.email as string | undefined) ?? null },
-  };
+/** Prototype mode (no sign-in): the frontend names the person it is acting as. */
+function resolveActor(req: NextRequest): string | null {
+  const actor = req.headers.get(ACTOR_HEADER)?.trim() ?? "";
+  if (!actor) return null;
+  if (!uuid.safeParse(actor).success) throw new ApiError(400, "Invalid person id");
+  return actor;
 }
 
-/**
- * Wraps a route handler: authenticates the bearer token, validates uuid path
- * params, serialises the result as JSON and maps errors to HTTP statuses.
- */
-export function route<P extends Record<string, string> = Record<string, never>>(
-  handler: (args: RouteArgs<P>) => Promise<unknown>,
-) {
+type Handler<A> = (args: A) => Promise<unknown>;
+
+function wrap<P extends Record<string, string>>(run: (req: NextRequest, params: P) => Promise<unknown>) {
   return async (req: NextRequest, ctx: { params: Promise<P> }) => {
     try {
       const params = ((await ctx?.params) ?? {}) as P;
       assertUuidParams(params);
-      const { supabase, user } = await authenticate(req);
-      const result = await handler({ req, params, supabase, user });
+      const result = await run(req, params);
       return Response.json(result ?? { ok: true });
     } catch (err) {
       if (err instanceof ApiError) {
         return Response.json({ error: err.message, code: err.code }, { status: err.status });
       }
+      // Make a missing SUPABASE_SECRET_KEY obvious instead of a generic error.
+      if (err instanceof Error && err.message.startsWith("Backend is not configured")) {
+        return Response.json({ error: err.message, code: "NOT_CONFIGURED" }, { status: 500 });
+      }
       console.error("[api] unhandled error", err);
       return Response.json({ error: "Something went wrong" }, { status: 500 });
     }
   };
+}
+
+/**
+ * Wraps a route handler that acts as a person: requires the X-Coop-Actor
+ * header, validates uuid path params, serialises the result as JSON and maps
+ * errors to HTTP statuses.
+ */
+export function route<P extends Record<string, string> = Record<string, never>>(handler: Handler<RouteArgs<P>>) {
+  return wrap<P>(async (req, params) => {
+    const actor = resolveActor(req);
+    if (!actor) throw new ApiError(401, "Choose who you are acting as first.", "NO_ACTOR");
+    return handler({ req, params, supabase: createActorClient(actor), user: { id: actor, email: null } });
+  });
+}
+
+/** Same as route(), for endpoints that work without a person (listing and creating people). */
+export function openRoute<P extends Record<string, string> = Record<string, never>>(
+  handler: Handler<Omit<RouteArgs<P>, "user"> & { user: AuthedUser | null }>,
+) {
+  return wrap<P>(async (req, params) => {
+    const actor = resolveActor(req);
+    return handler({ req, params, supabase: createActorClient(actor), user: actor ? { id: actor, email: null } : null });
+  });
 }
