@@ -65,7 +65,7 @@ function Nav() {
       <div
         className={cn(
           'mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-2xl px-4 py-2 transition-all duration-300 sm:px-5',
-          scrolled ? 'mx-3 border border-line bg-surface/80 shadow-sm backdrop-blur-md sm:mx-auto' : 'border border-transparent',
+          scrolled ? 'mx-3 border border-line bg-surface shadow-sm sm:mx-auto' : 'border border-transparent',
         )}
       >
         <a href="#top" onClick={(e) => {
@@ -133,29 +133,29 @@ function Hero() {
         className="absolute inset-0 -z-10 opacity-60 [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]"
         style={{ backgroundImage: 'radial-gradient(var(--border) 1px, transparent 1px)', backgroundSize: '22px 22px' }}
       />
-      <div aria-hidden className="absolute top-20 left-1/2 -z-10 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-accent/15 blur-[120px]" />
+      <div aria-hidden className="absolute top-0 left-1/2 -z-10 h-[560px] w-[900px] -translate-x-1/2" style={{ background: 'radial-gradient(closest-side, color-mix(in oklab, var(--accent) 16%, transparent), transparent)' }} />
 
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-[1.05fr_1fr]">
         <div>
-          <Reveal variant="pop" tilt={-2}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium shadow-sm">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-              For teams who wait on each other
-            </span>
+          <Reveal>
+            <h1 className={cn(display, 'text-[3.3rem] leading-[0.95] sm:text-7xl lg:text-[5.2rem]')}>
+              Work Together,
+              <br />
+              <span className="italic text-accent-ink">Move Forward</span>
+            </h1>
           </Reveal>
 
-          <Reveal delay={120}>
-            <h1 className={cn(display, 'mt-6 text-[3.2rem] leading-[0.95] sm:text-7xl lg:text-[4.9rem]')}>
+          <Reveal delay={140}>
+            <p className={cn(display, 'mt-6 text-[1.9rem] leading-[1.1] text-fg/85 sm:text-[2.5rem]')}>
               Know what's{' '}
               <span className="relative inline-block italic">
                 stuck
-                <svg className="scribble absolute -bottom-2 left-0 h-4 w-full text-accent" viewBox="0 0 200 16" preserveAspectRatio="none" aria-hidden>
+                <svg className="scribble absolute -bottom-1 left-0 h-3 w-full text-accent" viewBox="0 0 200 16" preserveAspectRatio="none" aria-hidden>
                   <path d="M3 11 C 40 3, 80 14, 118 7 S 180 4, 197 10" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
                 </svg>
-              </span>
-              <br />
+              </span>{' '}
               before the <span className="whitespace-nowrap">stand-up.</span>
-            </h1>
+            </p>
           </Reveal>
 
           <Reveal delay={240}>
@@ -188,7 +188,7 @@ function Hero() {
 
         <div className="relative">
           <Parallax speed={0.05}>
-            <Reveal variant="stop" delay={200} tilt={1}>
+            <Reveal variant="stop" delay={200}>
               <HeroBoard />
             </Reveal>
           </Parallax>
@@ -196,7 +196,7 @@ function Hero() {
           {/* stickers that drift at their own pace while scrolling */}
           <Parallax speed={-0.12} className="absolute -top-10 -left-6 hidden sm:block">
             <Reveal variant="pop" delay={900} tilt={-8}>
-              <div className="boil rounded-sm bg-amber-200 px-3 py-2.5 text-amber-950 shadow-md" style={{ '--r': '-8deg' } as CSSProperties}>
+              <div className="sway rounded-sm bg-amber-200 px-3 py-2.5 text-amber-950 shadow-md" style={{ '--r': '-8deg' } as CSSProperties}>
                 <p className="font-hand text-lg leading-none">Thu stand-up:</p>
                 <p className="font-hand text-lg leading-none">10 min, tops</p>
               </div>
@@ -235,7 +235,7 @@ function Ticker() {
       <div className="ticker flex w-max gap-10 whitespace-nowrap">
         {[...TICKS, ...TICKS].map((t, i) => (
           <span key={i} className="flex items-center gap-3 text-sm text-muted">
-            <span className={cn('size-1.5 rounded-full', i % 3 === 1 ? 'bg-rose-400' : i % 3 === 2 ? 'bg-emerald-400' : 'bg-accent')} />
+            <span className={cn('size-1.5 rounded-full', 'bg-accent/60')} />
             {t}
           </span>
         ))}
@@ -268,7 +268,7 @@ function Problem() {
       <div className="mt-16 grid gap-6 md:grid-cols-3">
         {NOTES.map((n, i) => (
           <Reveal key={i} variant="stop" delay={i * 160} tilt={n.tilt}>
-            <div className={cn('relative rounded-md p-6 pt-8 shadow-[0_12px_30px_-12px_rgba(0,0,0,0.25)]', n.color)}>
+            <div className={'relative rounded-md bg-[#fbf1d0] p-6 pt-8 shadow-[0_12px_30px_-12px_rgba(0,0,0,0.25)] dark:bg-[#2e2c26]'}>
               <span aria-hidden className="absolute -top-3 left-1/2 h-6 w-20 -translate-x-1/2 rotate-2 rounded-sm bg-white/60 shadow-sm dark:bg-white/10" />
               <p className="font-hand text-2xl leading-snug text-fg">{n.text}</p>
             </div>
@@ -295,9 +295,6 @@ function Demo() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">
-            <Reveal>
-              <p className="text-sm font-semibold text-accent">Try it</p>
-            </Reveal>
             <Reveal delay={80}>
               <h2 className={cn(display, 'mt-2 text-4xl leading-[1.05] sm:text-6xl')}>
                 The real flow, <span className="italic text-muted">minus the <span className="whitespace-nowrap">sign-up.</span></span>
@@ -348,7 +345,7 @@ function Principles() {
           {PRINCIPLES.map((p, i) => (
             <Reveal key={p.title} delay={i * 120}>
               <div className="group flex gap-4 rounded-2xl border border-line bg-surface p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent transition-transform duration-300 group-hover:-rotate-6">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-ink transition-transform duration-300 group-hover:-rotate-6">
                   {p.icon}
                 </span>
                 <div>
@@ -389,9 +386,6 @@ function HowItWorks() {
   return (
     <Section id="how">
       <div className="max-w-2xl">
-        <Reveal>
-          <p className="text-sm font-semibold text-accent">How it works</p>
-        </Reveal>
         <Reveal delay={80}>
           <h2 className={cn(display, 'mt-2 text-4xl leading-[1.05] sm:text-6xl')}>
             Three steps. <span className="italic text-muted">The third one repeats.</span>
@@ -406,7 +400,7 @@ function HowItWorks() {
         {STEPS.map((s, i) => (
           <Reveal key={s.title} variant="stop" delay={i * 180} className="relative">
             <span
-              className="boil relative z-10 flex size-16 items-center justify-center rounded-2xl bg-accent text-3xl text-accent-fg shadow-[0_10px_25px_-8px_var(--accent)]"
+              className="sway relative z-10 flex size-16 items-center justify-center rounded-2xl bg-accent text-3xl text-accent-fg shadow-[0_10px_25px_-8px_var(--accent)]"
               style={{ '--r': `${s.tilt}deg` } as CSSProperties}
             >
               <span className={display}>{i + 1}</span>
@@ -466,7 +460,7 @@ function Faq() {
             <details className="group py-5">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-left text-lg font-medium [&::-webkit-details-marker]:hidden">
                 {f.q}
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-line transition-transform duration-300 group-open:rotate-45 group-open:border-accent group-open:text-accent">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-line transition-transform duration-300 group-open:rotate-45 group-open:border-accent group-open:text-accent-ink">
                   <Plus className="size-4" />
                 </span>
               </summary>
@@ -485,10 +479,10 @@ function FinalCta() {
   const { session } = useAuth()
   return (
     <section className="px-4 pb-24 sm:px-6">
-      <Reveal variant="stop" tilt={-0.5}>
+      <Reveal variant="stop">
         <div className="grain relative mx-auto max-w-6xl overflow-hidden rounded-[32px] bg-accent px-6 py-16 text-center text-accent-fg sm:px-12 sm:py-24">
-          <div aria-hidden className="absolute -top-24 -right-24 size-72 rounded-full bg-white/10 blur-2xl" />
-          <div aria-hidden className="absolute -bottom-32 -left-16 size-80 rounded-full bg-black/10 blur-2xl" />
+          <div aria-hidden className="absolute -top-40 -right-40 size-[28rem]" style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.16), transparent)' }} />
+          <div aria-hidden className="absolute -bottom-48 -left-32 size-[30rem]" style={{ background: 'radial-gradient(closest-side, rgba(0,0,0,0.18), transparent)' }} />
           <h2 className={cn(display, 'relative text-4xl leading-[1.02] sm:text-7xl')}>
             Your next <span className="whitespace-nowrap">stand-up</span>
             <br />
@@ -498,7 +492,7 @@ function FinalCta() {
           <div className="relative mt-10 flex flex-wrap justify-center gap-3">
             <Link
               to={session ? '/dashboard' : '/signup'}
-              className="group inline-flex items-center gap-2 rounded-2xl bg-surface px-7 py-4 font-medium text-fg shadow-xl transition hover:-translate-y-0.5 active:scale-[0.98]"
+              className="group inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-4 font-medium text-[#141722] shadow-xl transition hover:-translate-y-0.5 active:scale-[0.98]"
             >
               {session ? 'Open your dashboard' : 'Create your workspace'}
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
@@ -522,7 +516,7 @@ function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted sm:flex-row sm:px-6">
         <div className="flex items-center gap-2">
           <img src="/favicon.svg" alt="" className="size-5" />
-          <span>Coop · for teams who wait on each other</span>
+          <span>Coop · Work together, move forward</span>
         </div>
         <div className="flex items-center gap-5">
           <Link to="/login" className="hover:text-fg">

@@ -105,7 +105,7 @@ export function Avatar({ name, src, size = 'md' }: { name?: string | null; src?:
   return src ? (
     <img src={src} alt={name ?? ''} className={cn(dims, 'rounded-full object-cover ring-2 ring-surface')} referrerPolicy="no-referrer" />
   ) : (
-    <span className={cn(dims, 'inline-flex shrink-0 items-center justify-center rounded-full bg-accent-soft font-semibold text-accent ring-2 ring-surface')}>
+    <span className={cn(dims, 'inline-flex shrink-0 items-center justify-center rounded-full bg-accent-soft font-semibold text-accent-ink ring-2 ring-surface')}>
       {initials(name)}
     </span>
   )

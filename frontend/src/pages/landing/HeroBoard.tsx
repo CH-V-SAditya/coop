@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, Hourglass, Sparkles } from 'lucide-react'
+import { AlertTriangle, Check, Eye, Hourglass } from 'lucide-react'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { cn } from '@/lib/utils'
 import { HandNote } from './motion'
@@ -7,8 +7,8 @@ type Col = 0 | 1 | 2
 type CardState = { col: Col; tone: 'idle' | 'active' | 'blocked' | 'waiting' | 'review' | 'done' }
 
 const CARDS = [
-  { id: 'qa', key: 'REL-1', title: 'QA sign-off', who: 'MI', color: 'bg-sky-500' },
-  { id: 'report', key: 'REL-2', title: 'Consolidated report', who: 'RK', color: 'bg-indigo-500' },
+  { id: 'qa', key: 'REL-1', title: 'QA sign-off', who: 'MI', color: 'bg-slate-500' },
+  { id: 'report', key: 'REL-2', title: 'Consolidated report', who: 'RK', color: 'bg-accent' },
   { id: 'schedule', key: 'REL-3', title: 'Deployment schedule', who: 'AS', color: 'bg-amber-500' },
   { id: 'approve', key: 'REL-4', title: 'Approve go-live', who: 'KN', color: 'bg-emerald-500' },
 ] as const
@@ -46,7 +46,7 @@ const FRAMES: Frame[] = [
 const TONE: Record<CardState['tone'], { label: string; chip: string; card: string }> = {
   idle: { label: 'Ready', chip: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300', card: 'border-line' },
   waiting: { label: 'Waiting', chip: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300', card: 'border-line' },
-  active: { label: 'In progress', chip: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300', card: 'border-indigo-300/70 dark:border-indigo-800' },
+  active: { label: 'In progress', chip: 'bg-accent-soft text-accent-ink', card: 'border-accent/40' },
   blocked: { label: 'Blocked', chip: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300', card: 'border-rose-400 dark:border-rose-700' },
   review: { label: 'In review', chip: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300', card: 'border-amber-300 dark:border-amber-800' },
   done: { label: 'Done', chip: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300', card: 'border-line opacity-80' },
@@ -119,9 +119,9 @@ export function HeroBoard() {
 
         {/* what management sees, rewritten every frame */}
         <div className="mt-2 flex items-start gap-2 rounded-xl border border-accent/25 bg-accent-soft/60 p-3">
-          <Sparkles className="mt-0.5 size-4 shrink-0 text-accent" />
+          <Eye className="mt-0.5 size-4 shrink-0 text-accent-ink" />
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold tracking-wider text-accent uppercase">What the manager sees</p>
+            <p className="text-[10px] font-semibold tracking-wider text-accent-ink uppercase">What the manager sees</p>
             <p key={frame} className="animate-enter text-sm leading-snug">
               {current.note}
             </p>

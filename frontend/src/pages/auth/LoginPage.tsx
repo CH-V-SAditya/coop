@@ -31,7 +31,7 @@ export default function LoginPage() {
       footer={
         <>
           New to Coop?{' '}
-          <Link to={`/signup${params.size ? `?${params}` : ''}`} className="font-medium text-accent">
+          <Link to={`/signup${params.size ? `?${params}` : ''}`} className="font-medium text-accent-ink">
             Create an account
           </Link>
         </>

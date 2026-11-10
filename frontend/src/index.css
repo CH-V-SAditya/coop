@@ -7,30 +7,32 @@
  * picks colours (see PLAN.md §15). Change values here only.
  */
 :root {
-  --bg: #f6f6f7;
+  --bg: #f6f7f9;
   --surface: #ffffff;
-  --surface-2: #f0f0f2;
-  --border: #e3e3e8;
-  --fg: #17171c;
-  --muted: #6b6b76;
-  --accent: #4f46e5;
+  --surface-2: #eff1f5;
+  --border: #e1e4eb;
+  --fg: #141722;
+  --muted: #5c6274;
+  --accent: #2f5bff;        /* fills: buttons, bars, rings (white text 5.2:1) */
   --accent-fg: #ffffff;
-  --accent-soft: #eef0ff;
+  --accent-ink: #2a52e8;    /* accent used as text/icons (5.6:1 on bg) */
+  --accent-soft: #eaefff;
   --danger: #dc2626;
   --ring: color-mix(in oklab, var(--accent) 45%, transparent);
   color-scheme: light;
 }
 
 .dark {
-  --bg: #0c0c0f;
-  --surface: #141418;
-  --surface-2: #1c1c22;
-  --border: #2a2a32;
-  --fg: #ececf1;
-  --muted: #9b9ba8;
-  --accent: #8b8cf8;
-  --accent-fg: #0c0c0f;
-  --accent-soft: #1f1d3d;
+  --bg: #181a21;            /* soft charcoal, not pitch black */
+  --surface: #20232c;
+  --surface-2: #282c37;
+  --border: #343947;
+  --fg: #eceef4;
+  --muted: #a3a9b9;
+  --accent: #3b63ff;        /* vivid blue: 3.7:1 vs bg, white text 4.8:1 */
+  --accent-fg: #ffffff;
+  --accent-ink: #8aa6ff;    /* readable blue text on dark (6.7:1 on cards) */
+  --accent-soft: #232b4d;
   --danger: #f87171;
   color-scheme: dark;
 }
@@ -44,6 +46,7 @@
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -110,45 +113,37 @@ body,
 .reveal { opacity: 0; }
 .reveal.is-shown { animation-delay: var(--d, 0ms); animation-fill-mode: both; }
 .reveal-rise.is-shown { animation-name: rise; animation-duration: 900ms; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
-.reveal-stop.is-shown { animation-name: stop-in; animation-duration: 760ms; animation-timing-function: steps(3, end); }
-.reveal-pop.is-shown { animation-name: stop-pop; animation-duration: 520ms; animation-timing-function: steps(2, end); }
+.reveal-stop.is-shown { animation-name: paper-in; animation-duration: 950ms; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+.reveal-pop.is-shown { animation-name: sticker-pop; animation-duration: 700ms; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
 .reveal-fade.is-shown { animation-name: fade; animation-duration: 1100ms; animation-timing-function: ease-out; }
 
 @keyframes rise {
   from { opacity: 0; transform: translateY(26px); }
   to { opacity: 1; transform: none; }
 }
-/* Stop-motion entrance: a few held "frames" instead of a smooth tween. */
-@keyframes stop-in {
-  0% { opacity: 0; transform: translateY(30px) rotate(-5deg) scale(0.94); }
-  35% { opacity: 1; transform: translateY(10px) rotate(2.5deg) scale(1.01); }
-  70% { opacity: 1; transform: translateY(-3px) rotate(-1deg); }
-  100% { opacity: 1; transform: rotate(var(--r, 0deg)); }
+/* Paper card settling into place at a slight tilt (smooth, GPU-only properties). */
+@keyframes paper-in {
+  from { opacity: 0; transform: translate3d(0, 34px, 0) rotate(calc(var(--r, 0deg) - 3deg)) scale(0.97); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) rotate(var(--r, 0deg)); }
 }
-@keyframes stop-pop {
-  0% { opacity: 0; transform: scale(0.6) rotate(-8deg); }
-  50% { opacity: 1; transform: scale(1.08) rotate(3deg); }
-  100% { opacity: 1; transform: scale(1) rotate(var(--r, 0deg)); }
+@keyframes sticker-pop {
+  from { opacity: 0; transform: scale(0.82) rotate(calc(var(--r, 0deg) - 7deg)); }
+  to { opacity: 1; transform: scale(1) rotate(var(--r, 0deg)); }
 }
 
-/* "Line boil": hand-animated wobble, held on each frame. */
-.boil { animation: boil 0.9s steps(1) infinite; }
-@keyframes boil {
-  0% { transform: rotate(var(--r, 0deg)) translate(0, 0); }
-  25% { transform: rotate(calc(var(--r, 0deg) + 0.7deg)) translate(0.6px, -0.6px); }
-  50% { transform: rotate(calc(var(--r, 0deg) - 0.5deg)) translate(-0.6px, 0.4px); }
-  75% { transform: rotate(calc(var(--r, 0deg) + 0.3deg)) translate(0.4px, 0.6px); }
+/* Gentle sway for stickers and notes (smooth, transform only). */
+.sway { animation: sway 7s ease-in-out infinite; transform-origin: 50% 0; }
+@keyframes sway {
+  0%, 100% { transform: rotate(var(--r, 0deg)); }
+  50% { transform: rotate(calc(var(--r, 0deg) + 1.2deg)) translate3d(0, -2px, 0); }
 }
 
 /* Hand-drawn underline that draws itself in. */
 .scribble path { stroke-dasharray: 420; stroke-dashoffset: 420; animation: draw 1.1s 0.6s cubic-bezier(0.6, 0, 0.3, 1) forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 
-/* Delayed-scroll parallax: --ls is the smoothed scroll position set by Lenis. */
-.parallax { transform: translate3d(0, calc(var(--ls, 0) * var(--speed, 0) * 1px), 0); will-change: transform; }
-
 /* Slow ticker */
-.ticker { animation: ticker 48s linear infinite; }
+.ticker { animation: ticker 48s linear infinite; will-change: transform; }
 .ticker:hover { animation-play-state: paused; }
 @keyframes ticker { to { transform: translateX(-50%); } }
 
@@ -158,14 +153,13 @@ body,
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.06;
-  mix-blend-mode: multiply;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-.dark .grain::before { mix-blend-mode: screen; opacity: 0.05; }
+.dark .grain::before { opacity: 0.025; }
 
-/* Stepped movement for the stop-motion board */
-.stop-move { transition: transform 560ms steps(4, end), background-color 200ms steps(2), border-color 200ms steps(2); }
+/* Board cards glide between columns */
+.stop-move { transition: transform 750ms cubic-bezier(0.65, 0, 0.35, 1), background-color 300ms ease, border-color 300ms ease; will-change: transform; }
 
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }

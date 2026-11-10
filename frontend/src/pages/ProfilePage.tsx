@@ -138,7 +138,7 @@ function OrganisationSection() {
                 <Mail className="size-4 text-muted" />
                 <span className="flex-1 truncate">{inv.email}</span>
                 {inv.group && <Badge className="bg-surface-2">{inv.group.name}</Badge>}
-                {inv.functional_role && <Badge className="bg-accent-soft text-accent">{inv.functional_role}</Badge>}
+                {inv.functional_role && <Badge className="bg-accent-soft text-accent-ink">{inv.functional_role}</Badge>}
                 <span className="text-xs text-muted">expires {formatDate(inv.expires_at)}</span>
                 <button className="rounded-md p-1.5 text-muted hover:bg-surface-2 hover:text-fg" title="Copy link" onClick={() => navigator.clipboard.writeText(inv.invite_url)}>
                   <Link2 className="size-4" />

@@ -3,7 +3,7 @@ import type { BlockerCategory, BlockerStatus, Priority, TaskStatus } from './typ
 export const STATUS_META: Record<TaskStatus, { label: string; tone: string; dot: string }> = {
   draft: { label: 'Draft', tone: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300', dot: 'bg-zinc-400' },
   ready: { label: 'Ready', tone: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300', dot: 'bg-sky-500' },
-  in_progress: { label: 'In progress', tone: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300', dot: 'bg-indigo-500' },
+  in_progress: { label: 'In progress', tone: 'bg-accent-soft text-accent-ink', dot: 'bg-accent' },
   blocked: { label: 'Blocked', tone: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300', dot: 'bg-rose-500' },
   in_review: { label: 'In review', tone: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300', dot: 'bg-amber-500' },
   completed: { label: 'Completed', tone: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300', dot: 'bg-emerald-500' },

@@ -34,9 +34,9 @@ export default function SignupPage() {
 
   if (sentTo) {
     return (
-      <AuthLayout title="Check your email" subtitle="One more step" footer={<Link to="/login" className="font-medium text-accent">Back to sign in</Link>}>
+      <AuthLayout title="Check your email" subtitle="One more step" footer={<Link to="/login" className="font-medium text-accent-ink">Back to sign in</Link>}>
         <div className="flex flex-col items-center gap-3 text-center text-sm">
-          <MailCheck className="size-8 text-accent" />
+          <MailCheck className="size-8 text-accent-ink" />
           <p>
             We sent a confirmation link to <strong>{sentTo}</strong>. Open it to activate your account.
           </p>
@@ -52,7 +52,7 @@ export default function SignupPage() {
       footer={
         <>
           Already have an account?{' '}
-          <Link to={`/login${params.size ? `?${params}` : ''}`} className="font-medium text-accent">
+          <Link to={`/login${params.size ? `?${params}` : ''}`} className="font-medium text-accent-ink">
             Sign in
           </Link>
         </>

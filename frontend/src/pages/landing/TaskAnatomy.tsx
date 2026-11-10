@@ -55,10 +55,7 @@ export function TaskAnatomy() {
     <div className="grid items-center gap-12 lg:grid-cols-2">
       <div>
         <Reveal>
-          <p className="text-sm font-semibold text-accent">The four questions</p>
-        </Reveal>
-        <Reveal delay={80}>
-          <h2 className="mt-2 font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+          <h2 className="font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl">
             Every task should answer four questions. <span className="italic text-muted">Most tools squash them into one.</span>
           </h2>
         </Reveal>
@@ -80,7 +77,7 @@ export function TaskAnatomy() {
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="font-semibold">{p.q}</span>
-                  <span className={cn('text-xs font-medium', active === p.id ? 'text-accent' : 'text-muted')}>{p.label}</span>
+                  <span className={cn('text-xs font-medium', active === p.id ? 'text-accent-ink' : 'text-muted')}>{p.label}</span>
                 </div>
                 <div className={cn('grid transition-all duration-500', active === p.id ? 'mt-2 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')}>
                   <p className="overflow-hidden text-sm leading-relaxed text-muted">{p.body}</p>
@@ -92,7 +89,7 @@ export function TaskAnatomy() {
       </div>
 
       {/* the sample task, with the active part circled */}
-      <Reveal variant="stop" tilt={-1.2}>
+      <Reveal variant="stop">
         <div className="grain relative mx-auto max-w-md rounded-[24px] border border-line bg-surface p-6 shadow-[0_30px_80px_-35px_rgba(40,40,90,0.4)]">
           <div className="flex items-center justify-between text-xs text-muted">
             <span className="font-mono">REL-2</span>

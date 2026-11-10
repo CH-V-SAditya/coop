@@ -46,7 +46,7 @@ export default function DashboardPage() {
       </div>
 
       <Card className="mt-4 flex items-start gap-3 border-dashed p-4">
-        <Sparkles className="mt-0.5 size-4 shrink-0 text-accent" />
+        <Sparkles className="mt-0.5 size-4 shrink-0 text-accent-ink" />
         <p className="text-sm text-muted">
           <span className="font-medium text-fg">AI insights</span> (progress summaries, risk alerts and starting advice for your tasks) arrive with the AI
           layer in Phase 8–9.
@@ -55,7 +55,7 @@ export default function DashboardPage() {
 
       {tasks.length === 0 ? (
         <div className="mt-8">
-          <EmptyState title="No tasks assigned to you yet" action={<Link to="/groups" className="text-sm font-medium text-accent">Browse your groups</Link>}>
+          <EmptyState title="No tasks assigned to you yet" action={<Link to="/groups" className="text-sm font-medium text-accent-ink">Browse your groups</Link>}>
             When a manager assigns you work, or you pick up a task, it shows up here.
           </EmptyState>
         </div>

@@ -40,7 +40,7 @@ export default function OnboardingPage() {
   return (
     <div className="flex min-h-dvh items-center justify-center px-4">
       <div className="w-full max-w-md animate-enter">
-        <div className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+        <div className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-ink">
           <Building2 className="size-6" />
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">{hasOrg ? 'Create another organisation' : 'Set up your organisation'}</h1>

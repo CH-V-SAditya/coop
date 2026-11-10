@@ -22,7 +22,7 @@ function RootError() {
     <div className="mx-auto max-w-md space-y-2 p-10 text-center">
       <h1 className="text-lg font-semibold">Something went wrong</h1>
       <p className="text-sm text-muted">{message}</p>
-      <a href="/dashboard" className="text-sm font-medium text-accent">
+      <a href="/dashboard" className="text-sm font-medium text-accent-ink">
         Back to dashboard
       </a>
     </div>

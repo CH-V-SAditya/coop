@@ -17,7 +17,7 @@ export default function AuthCallbackPage() {
     return (
       <div className="mx-auto max-w-sm space-y-4 p-10">
         <ErrorNote error={error} />
-        <a href="/login" className="text-sm font-medium text-accent">
+        <a href="/login" className="text-sm font-medium text-accent-ink">
           Back to sign in
         </a>
       </div>

@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, Check, CornerDownLeft, Hash, Hourglass, RotateCcw, Sparkles, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Check, CornerDownLeft, Eye, Flag, Hash, Hourglass, RotateCcw, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -8,15 +8,15 @@ type Stage = 'start' | 'thinking' | 'suggested' | 'dismissed' | 'blocked' | 'res
 type Task = { key: string; title: string; owner: string; initials: string; color: string; status: Status; progress: number; waitingOn?: string }
 
 const INITIAL: Record<string, Task> = {
-  qa: { key: 'REL-1', title: 'QA sign-off', owner: 'Meera', initials: 'MI', color: 'bg-sky-500', status: 'completed', progress: 100 },
-  report: { key: 'REL-2', title: 'Consolidated report', owner: 'Ravi', initials: 'RK', color: 'bg-indigo-500', status: 'in_progress', progress: 60 },
+  qa: { key: 'REL-1', title: 'QA sign-off', owner: 'Meera', initials: 'MI', color: 'bg-slate-500', status: 'completed', progress: 100 },
+  report: { key: 'REL-2', title: 'Consolidated report', owner: 'Ravi', initials: 'RK', color: 'bg-accent', status: 'in_progress', progress: 60 },
   schedule: { key: 'REL-3', title: 'Deployment schedule', owner: 'Arjun', initials: 'AS', color: 'bg-amber-500', status: 'draft', progress: 0, waitingOn: 'REL-2' },
   approve: { key: 'REL-4', title: 'Approve go-live', owner: 'Kavya', initials: 'KN', color: 'bg-emerald-500', status: 'draft', progress: 0, waitingOn: 'REL-3' },
 }
 
 const CHIP: Record<Status, { label: string; cls: string }> = {
   draft: { label: 'Yet to start', cls: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300' },
-  in_progress: { label: 'In progress', cls: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300' },
+  in_progress: { label: 'In progress', cls: 'bg-accent-soft text-accent-ink' },
   blocked: { label: 'Blocked', cls: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' },
   in_review: { label: 'In review', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' },
   completed: { label: 'Done', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' },
@@ -24,8 +24,8 @@ const CHIP: Record<Status, { label: string; cls: string }> = {
 
 type Msg = { who: string; initials: string; color: string; text: string }
 const OPENING: Msg[] = [
-  { who: 'Meera', initials: 'MI', color: 'bg-sky-500', text: 'QA is signed off. Over to you, Ravi.' },
-  { who: 'Ravi', initials: 'RK', color: 'bg-indigo-500', text: "Thanks! Report's about 60% there." },
+  { who: 'Meera', initials: 'MI', color: 'bg-slate-500', text: 'QA is signed off. Over to you, Ravi.' },
+  { who: 'Ravi', initials: 'RK', color: 'bg-accent', text: "Thanks! Report's about 60% there." },
 ]
 const RAVI_LINE = "Can't close the report until finance sends the revised Q3 figures."
 
@@ -50,7 +50,7 @@ export function LiveDemo() {
   }
 
   const send = () => {
-    setMessages((m) => [...m, { who: 'Ravi', initials: 'RK', color: 'bg-indigo-500', text: RAVI_LINE }])
+    setMessages((m) => [...m, { who: 'Ravi', initials: 'RK', color: 'bg-accent', text: RAVI_LINE }])
     setStage('thinking')
     timer.current = window.setTimeout(() => {
       setStage('suggested')
@@ -159,8 +159,8 @@ export function LiveDemo() {
 
         {/* manager summary */}
         <div className="mt-4 rounded-xl border border-accent/25 bg-accent-soft/50 p-3.5">
-          <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-accent uppercase">
-            <Sparkles className="size-3" /> Status for management
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-accent-ink uppercase">
+            <Eye className="size-3" /> Status for management
           </p>
           <p key={summary} className="mt-1 animate-enter text-sm leading-snug">
             {summary}
@@ -178,7 +178,7 @@ export function LiveDemo() {
                     'size-1.5 shrink-0 rounded-full',
                     item.tone === 'bad' && 'bg-rose-500',
                     item.tone === 'good' && 'bg-emerald-500',
-                    item.tone === 'ai' && 'bg-violet-500',
+                    item.tone === 'ai' && 'bg-accent',
                     item.tone === 'neutral' && 'bg-zinc-400',
                   )}
                 />
@@ -208,14 +208,14 @@ export function LiveDemo() {
 
           {stage === 'thinking' && (
             <div className="flex animate-fade items-center gap-2 pl-9 text-xs text-muted">
-              <Sparkles className="size-3.5 animate-pulse text-violet-500" /> Coop is reading the thread…
+              <span className="size-1.5 animate-pulse rounded-full bg-accent" /> Coop is reading the thread…
             </div>
           )}
 
           {(stage === 'suggested' || stage === 'dismissed') && (
-            <div className={cn('ml-9 animate-pop rounded-xl border border-violet-300/70 bg-surface p-3.5 shadow-sm dark:border-violet-900', stage === 'dismissed' && 'opacity-50')}>
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-violet-600 uppercase dark:text-violet-400">
-                <Sparkles className="size-3" /> Possible blocker · needs a human
+            <div className={cn('ml-9 animate-pop rounded-xl border border-accent/40 bg-surface p-3.5 shadow-sm', stage === 'dismissed' && 'opacity-50')}>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-accent-ink uppercase">
+                <Flag className="size-3" /> Possible blocker · needs a human
               </p>
               <dl className="mt-2 grid grid-cols-[92px_1fr] gap-x-2 gap-y-1 text-xs">
                 <dt className="text-muted">Blocker</dt>
@@ -245,7 +245,7 @@ export function LiveDemo() {
           {stage === 'dismissed' && (
             <p className="ml-9 animate-enter text-xs text-muted">
               Fine by Coop. Nothing on the board changed, because nobody confirmed it.{' '}
-              <button onClick={() => setStage('suggested')} className="font-medium text-accent underline-offset-2 hover:underline">
+              <button onClick={() => setStage('suggested')} className="font-medium text-accent-ink underline-offset-2 hover:underline">
                 Try the other answer
               </button>
             </p>

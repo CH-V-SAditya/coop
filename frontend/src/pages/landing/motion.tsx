@@ -4,52 +4,70 @@ import { cn } from '@/lib/utils'
 
 /* ------------------------------------------------------------------ Smooth (delayed) scroll */
 
-type ScrollApi = { scrollTo: (target: string) => void; scrolled: boolean }
-const ScrollContext = createContext<ScrollApi>({ scrollTo: () => {}, scrolled: false })
+type Layer = { el: HTMLElement; speed: number }
+type ScrollApi = {
+  scrollTo: (target: string) => void
+  scrolled: boolean
+  register: (layer: Layer) => () => void
+}
+const ScrollContext = createContext<ScrollApi>({ scrollTo: () => {}, scrolled: false, register: () => () => {} })
 
 const prefersReducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /**
- * Lenis gives the page its weighted, slightly delayed scroll. It also feeds the
- * smoothed scroll position into the CSS variable --ls, which drives parallax.
+ * Lenis gives the page its weighted, slightly delayed scroll. Performance notes:
+ * - Parallax layers are moved by writing `transform` straight onto each element.
+ *   (Writing a CSS variable on <html> every frame forces a full-page restyle.)
+ * - React state only changes when the nav crosses its threshold, not per frame.
  * Destroyed on unmount so the app pages keep native scrolling.
  */
 export function SmoothScroll({ children }: { children: ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null)
+  const layers = useRef(new Set<Layer>())
+  const scrolledRef = useRef(false)
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const root = document.documentElement
+    const reduced = prefersReducedMotion()
     const onScroll = (y: number) => {
-      root.style.setProperty('--ls', y.toFixed(1))
-      setScrolled((prev) => (prev !== y > 24 ? y > 24 : prev))
-    }
-
-    if (prefersReducedMotion()) {
-      const native = () => onScroll(window.scrollY)
-      window.addEventListener('scroll', native, { passive: true })
-      return () => {
-        window.removeEventListener('scroll', native)
-        root.style.removeProperty('--ls')
+      if (!reduced) {
+        for (const { el, speed } of layers.current) el.style.transform = `translate3d(0, ${(y * speed).toFixed(1)}px, 0)`
+      }
+      const next = y > 24
+      if (next !== scrolledRef.current) {
+        scrolledRef.current = next
+        setScrolled(next)
       }
     }
 
-    const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, autoRaf: true, anchors: { offset: -72 } })
+    if (reduced) {
+      const native = () => onScroll(window.scrollY)
+      window.addEventListener('scroll', native, { passive: true })
+      return () => window.removeEventListener('scroll', native)
+    }
+
+    const lenis = new Lenis({ lerp: 0.08, wheelMultiplier: 0.9, autoRaf: true, anchors: { offset: -72 } })
     lenisRef.current = lenis
     lenis.on('scroll', (l: Lenis) => onScroll(l.scroll))
     return () => {
       lenis.destroy()
       lenisRef.current = null
-      root.style.removeProperty('--ls')
     }
   }, [])
 
-  const scrollTo = (target: string) => {
-    if (lenisRef.current) lenisRef.current.scrollTo(target, { offset: -72, duration: 1.4 })
-    else document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' })
+  const api: ScrollApi = {
+    scrolled,
+    scrollTo: (target) => {
+      if (lenisRef.current) lenisRef.current.scrollTo(target, { offset: -72, duration: 1.4 })
+      else document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' })
+    },
+    register: (layer) => {
+      layers.current.add(layer)
+      return () => layers.current.delete(layer)
+    },
   }
 
-  return <ScrollContext value={{ scrollTo, scrolled }}>{children}</ScrollContext>
+  return <ScrollContext value={api}>{children}</ScrollContext>
 }
 
 export const useSmoothScroll = () => use(ScrollContext)
@@ -58,10 +76,10 @@ export const useSmoothScroll = () => use(ScrollContext)
 
 type RevealProps = {
   children: ReactNode
-  /** rise = smooth; stop = stop-motion frames; pop = sticker pop; fade = slow fade */
+  /** rise = lift in; stop = paper card settling at a tilt; pop = sticker pop; fade = slow fade */
   variant?: 'rise' | 'stop' | 'pop' | 'fade'
   delay?: number
-  /** Resting rotation (deg) for stop/pop variants, so stickers land slightly askew. */
+  /** Resting rotation (deg) for stop/pop variants, so cards land slightly askew. */
   tilt?: number
   as?: ElementType
   className?: string
@@ -99,10 +117,18 @@ export function Reveal({ children, variant = 'rise', delay = 0, tilt = 0, as: Ta
   )
 }
 
-/** Moves at a different speed than the page while scrolling (negative = slower/up). */
+/** Moves at a different speed than the page while scrolling (negative = drifts up). */
 export function Parallax({ speed, className, children }: { speed: number; className?: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const { register } = useSmoothScroll()
+
+  useEffect(() => {
+    if (!ref.current) return
+    return register({ el: ref.current, speed })
+  }, [register, speed])
+
   return (
-    <div className={cn('parallax', className)} style={{ '--speed': speed } as CSSProperties}>
+    <div ref={ref} className={cn('will-change-transform', className)}>
       {children}
     </div>
   )
@@ -111,7 +137,7 @@ export function Parallax({ speed, className, children }: { speed: number; classN
 /** Handwritten margin note, the kind you'd scribble on a printed plan. */
 export function HandNote({ children, className, tilt = -3 }: { children: ReactNode; className?: string; tilt?: number }) {
   return (
-    <span className={cn('boil inline-block font-hand text-xl leading-tight text-accent', className)} style={{ '--r': `${tilt}deg` } as CSSProperties}>
+    <span className={cn('sway inline-block font-hand text-xl leading-tight text-accent-ink', className)} style={{ '--r': `${tilt}deg` } as CSSProperties}>
       {children}
     </span>
   )

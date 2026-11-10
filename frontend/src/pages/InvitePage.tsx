@@ -60,7 +60,7 @@ export default function InvitePage() {
           <ErrorNote error={loadError ?? 'Invitation not found'} />
         ) : (
           <div className="space-y-5">
-            <MailOpen className="size-8 text-accent" />
+            <MailOpen className="size-8 text-accent-ink" />
             <div>
               <h1 className="text-xl font-semibold">
                 Join {data.group_name ? `${data.group_name} at ` : ''}
@@ -72,7 +72,7 @@ export default function InvitePage() {
             </div>
             {data.functional_role && (
               <p className="text-sm">
-                Your role in the group: <Badge className="bg-accent-soft text-accent">{data.functional_role}</Badge>
+                Your role in the group: <Badge className="bg-accent-soft text-accent-ink">{data.functional_role}</Badge>
               </p>
             )}
             {data.status !== 'pending' ? (

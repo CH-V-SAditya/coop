@@ -90,7 +90,7 @@ function MemberRow({ member, data }: { member: GroupMember; data: GroupDetail })
             <span className="truncate font-medium">{member.full_name ?? member.email}</span>
             {isMe && <span className="text-xs text-muted">(you)</span>}
             {member.role === 'admin' && (
-              <Badge className="bg-accent-soft text-accent">
+              <Badge className="bg-accent-soft text-accent-ink">
                 <ShieldCheck className="size-3" /> Admin
               </Badge>
             )}

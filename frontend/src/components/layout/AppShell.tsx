@@ -11,7 +11,7 @@ import { useTheme, type Theme } from '@/providers/theme'
 const navItem = ({ isActive }: { isActive: boolean }) =>
   cn(
     'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors',
-    isActive ? 'bg-accent-soft font-medium text-accent' : 'text-muted hover:bg-surface-2 hover:text-fg',
+    isActive ? 'bg-accent-soft font-medium text-accent-ink' : 'text-muted hover:bg-surface-2 hover:text-fg',
   )
 
 export function AppShell() {

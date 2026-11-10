@@ -48,7 +48,7 @@ export default function GroupsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold">{g.name}</h3>
                     {g.my_role === 'admin' && (
-                      <Badge className="bg-accent-soft text-accent">
+                      <Badge className="bg-accent-soft text-accent-ink">
                         <ShieldCheck className="size-3" /> Admin
                       </Badge>
                     )}
