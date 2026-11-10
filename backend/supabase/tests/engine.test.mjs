@@ -167,23 +167,71 @@ await expectErr('member without permission cannot upload',
 console.log('\nPrototype mode without sign-in');
 // Simulates PostgREST: one transaction per request; set the request headers,
 // switch role, run the pre-request hook, then the query.
+// On real Postgres the connection logs in as `authenticator`, exactly like PostgREST,
+// so role switching is subject to the same membership rules as in production.
+let apiDb = db;
+if (REAL_PG) {
+  const u = new URL(PG_URL);
+  u.username = 'authenticator';
+  const client = new pg.Client({ connectionString: u.toString() });
+  await client.connect();
+  apiDb = { query: (text, params) => client.query(text, params), exec: (text) => client.query(text), close: () => client.end() };
+}
 async function viaApi(role, actor, sql, params = []) {
   const headers = JSON.stringify(actor ? { 'x-coop-actor': actor } : {});
-  await db.exec(`reset role; select set_config('request.jwt.claim.sub', '', false); begin;
+  await apiDb.exec(`reset role; select set_config('request.jwt.claim.sub', '', false); begin;
     select set_config('request.headers', '${headers}', true); set local role ${role}; select public.coop_pre_request();`);
   try {
-    const rows = (await db.query(sql, params)).rows;
-    await db.exec('commit;');
+    const rows = (await apiDb.query(sql, params)).rows;
+    await apiDb.exec('commit;');
     return rows;
   } catch (e) {
-    await db.exec('rollback;');
+    await apiDb.exec('rollback;');
     throw e;
   } finally {
-    await db.exec('reset role;');
+    await apiDb.exec('reset role;');
   }
 }
-const [{ uid: actorUid }] = await viaApi('service_role', users.a, `select auth.uid() as uid`);
+const [{ uid: actorUid, who: actorRole }] = await viaApi('service_role', users.a, `select auth.uid() as uid, current_user::text as who`);
 check('backend (service_role) can act as a person', actorUid === users.a);
+check('acting as a person drops the RLS bypass', actorRole === 'authenticated', `runs as ${actorRole}`);
+const [{ uid: noUid, who: noRole }] = await viaApi('service_role', null, `select auth.uid() as uid, current_user::text as who`);
+check('no acting person: backend stays service_role with no identity', noUid === null && noRole === 'service_role');
+const [{ who: afterRole }] = (await apiDb.query(`select current_user::text as who`)).rows;
+check('role switch does not leak into the next request', afterRole !== 'authenticated', `next request starts as ${afterRole}`);
+
+// Tenant isolation through the API path: D is not a member of Acme Labs.
+const api = (actor, sql, params) => viaApi('service_role', actor, sql, params);
+check('API: outsider sees no groups', (await api(users.d, `select id from public.groups`)).length === 0);
+check('API: outsider sees no group by id', (await api(users.d, `select id from public.groups where id = $1`, [grp.id])).length === 0);
+check('API: outsider sees no board', (await api(users.d, `select id from public.task_board where group_id = $1`, [grp.id])).length === 0);
+check('API: outsider sees no task by id', (await api(users.d, `select id from public.tasks where id = $1`, [t1.id])).length === 0);
+check('API: outsider sees no organisation members', (await api(users.d, `select id from public.organisation_members where organisation_id = $1`, [org.id])).length === 0);
+check('API: outsider sees no group directory', (await api(users.d, `select * from public.group_member_directory where group_id = $1`, [grp.id])).length === 0);
+check('API: outsider sees no events, comments, blockers or dependencies',
+  (await api(users.d, `select ((select count(*) from public.task_events) + (select count(*) from public.task_comments)
+     + (select count(*) from public.task_blockers) + (select count(*) from public.task_dependencies))::int as n`))[0].n === 0);
+check('API: outsider sees no other profiles', (await api(users.d, `select id from public.profiles where id <> $1`, [users.d])).length === 0);
+check('API: outsider cannot edit the group', (await api(users.d, `update public.groups set name = 'pwned' where id = $1 returning id`, [grp.id])).length === 0);
+check('API: outsider cannot edit a task', (await api(users.d, `update public.tasks set title = 'pwned' where id = $1 returning id`, [t1.id])).length === 0);
+check('API: outsider cannot delete a task', (await api(users.d, `delete from public.tasks where id = $1 returning id`, [t3.id])).length === 0);
+await expectErr('API: outsider cannot create a task',
+  api(users.d, `insert into public.tasks (organisation_id, group_id, title) values ($1,$2,'x')`, [org.id, grp.id]), 'row-level security');
+await expectErr('API: outsider cannot comment',
+  api(users.d, `insert into public.task_comments (organisation_id, task_id, author_id, body) values ($1,$2,$3,'hi')`, [org.id, t1.id, users.d]), 'row-level security');
+await expectErr('API: outsider cannot transition a task', api(users.d, `select public.transition_task($1, 'cancelled', 'x')`, [t1.id]), '');
+await expectErr('API: outsider cannot add a dependency', api(users.d, `select public.add_task_dependency($1, $2)`, [t1.id, t3.id]), '');
+await expectErr('API: outsider cannot report a blocker', api(users.d, `select * from public.report_blocker($1, 'x', 'other')`, [t1.id]), '');
+// Members keep their own limits through the API path too.
+check('API: member (not admin) cannot edit the group', (await api(users.b, `update public.groups set name = 'x' where id = $1 returning id`, [grp.id])).length === 0);
+await expectErr('API: direct status write is denied', api(users.b, `update public.tasks set status = 'completed' where id = $1`, [t1.id]), 'permission denied');
+await expectErr('API: events cannot be inserted',
+  api(users.a, `insert into public.task_events (organisation_id, task_id, event_type) values ($1,$2,'fake')`, [org.id, t1.id]), 'permission denied');
+check('API: member sees the board', (await api(users.c, `select id from public.task_board where group_id = $1`, [grp.id])).length === 3);
+check('API: admin can edit the group', (await api(users.a, `update public.groups set description = 'Marketing site' where id = $1 returning id`, [grp.id])).length === 1);
+check('API: nothing was changed by the outsider',
+  (await db.query(`select (select name from public.groups where id = $1) as g, (select title from public.tasks where id = $2) as t, (select count(*)::int from public.tasks where id = $3) as n`, [grp.id, t1.id, t3.id])).rows
+    .every((r) => r.g === 'Website' && r.t === 'QA assessment' && r.n === 1));
 const [{ uid: anonUid }] = await viaApi('anon', users.a, `select auth.uid() as uid`);
 check('public key cannot act as anyone', anonUid === null);
 const [{ uid: authUid }] = await viaApi('authenticated', users.a, `select auth.uid() as uid`);
@@ -207,5 +255,6 @@ const [eveOrg] = await viaApi('service_role', eve.id, `select * from public.crea
 check('a new person can create an organisation as themselves', eveOrg?.created_by === eve.id);
 
 console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL CHECKS PASSED');
+if (apiDb !== db) await apiDb.close?.();
 await db.close?.();
 process.exit(failures ? 1 : 0);

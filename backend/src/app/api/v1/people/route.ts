@@ -1,10 +1,16 @@
 import { z } from "zod";
 import { check, openRoute, parseBody } from "@/lib/http";
+import { createActorClient } from "@/lib/supabase/server";
 
-/** GET /api/v1/people: everyone in the workspace (prototype mode: used by the "Who are you?" picker). */
-export const GET = openRoute(async ({ supabase }) => {
+/**
+ * GET /api/v1/people: everyone in the workspace (prototype mode: used by the "Who are you?" picker
+ * and by "add an existing person"). Deliberately read WITHOUT an acting person: requests made as a
+ * person obey Row Level Security and would only see people who share an organisation with them.
+ * This endpoint goes away when sign-in returns.
+ */
+export const GET = openRoute(async () => {
   return check(
-    await supabase.from("profiles").select("id, full_name, email, job_title, avatar_url, created_at").order("full_name"),
+    await createActorClient(null).from("profiles").select("id, full_name, email, job_title, avatar_url, created_at").order("full_name"),
   );
 });
 

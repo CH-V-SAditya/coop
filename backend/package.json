@@ -13,7 +13,9 @@
     "stack:up": "node scripts/local-stack.mjs up",
     "stack:db": "node scripts/local-stack.mjs db",
     "stack:down": "node scripts/local-stack.mjs down",
-    "test:db:pg": "node scripts/local-stack.mjs db --reset && node supabase/tests/engine.test.mjs supabase/migrations --pg"
+    "test:db:pg": "node scripts/local-stack.mjs db --reset && node supabase/tests/engine.test.mjs supabase/migrations --pg",
+    "test:api:smoke": "node --env-file=.env.local scripts/api-smoke.mjs",
+    "test:server": "node scripts/test-server.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

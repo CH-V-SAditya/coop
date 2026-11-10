@@ -401,7 +401,7 @@ The product owner's master development prompt replaces the phase plan in §13 fr
 | Question | Decision |
 | --- | --- |
 | Blocker lifecycle | **Merged:** `reported` → `confirmed` (shown as "Open") → `in_resolution` → `resolved`, or `dismissed`. AI-detected blockers become AI suggestions; accepting one creates a blocker. `potential` is no longer used. |
-| Database access | **Keep the Supabase REST API with the secret key.** RLS is bypassed, so tenant isolation is enforced in the API and in the engine's SECURITY DEFINER functions, and proven with adversarial cross-tenant tests at the API level. |
+| Database access | **Keep the Supabase REST API with the secret key.** The secret key alone bypasses RLS, so (migration 900) every request made on behalf of a person is switched to the `authenticated` role by the pre-request hook: RLS policies, column grants and engine checks all apply, exactly as for a signed-in user. Tenant isolation is enforced by the database and proven with adversarial cross-tenant tests at the database and API level. |
 | Authentication timing | **Now, before the task engine** (spec Phase 2). Prototype mode (§12.1) is replaced: the API verifies the user's JWT and tells Postgres who is acting. |
 
 ### 16.2 Phases
@@ -429,7 +429,7 @@ The product owner's master development prompt replaces the phase plan in §13 fr
 | Blockers with resolution owner, merged lifecycle | 🟡 Columns exist; lifecycle differs | v2-3 |
 | Member removal with reassignment | ❌ Missing | v2-3 |
 | Idempotency keys for important writes | ❌ Missing | v2-3 |
-| Tenant isolation | 🟡 Engine functions check membership; direct table reads through the secret key do not | v2-2 / v2-3 |
+| Tenant isolation | 🟡 Found 2026-11-10 with the API smoke test on the Supabase project: with migration 800 alone, a non-member could read another organisation's groups, members, board and tasks, rename its group and delete its task (8 of 25 checks failed). Fixed by migration 900 (requests as a person obey RLS); 26 adversarial checks pass on PGlite and real Postgres 17. **Still to verify on the Supabase project once migration 900 is deployed** (`npm run test:api:smoke`). | v2-2 |
 | Auth: register, login, verify, reset, invitations, deactivation | ⏸ Removed for prototype mode; code is in git history | v2-2 |
 | Invitation expiry | 🐞 Accepting an expired invitation rolls back its own "expired" update | v2-2 |
 | Notifications, attachments, user preferences tables | ❌ Missing (`task_evidence` covers part of attachments) | v2-2 / v2-4 |
@@ -444,4 +444,5 @@ The product owner's master development prompt replaces the phase plan in §13 fr
 - **Local Postgres** (`backend/scripts/local-stack.mjs db`): a disposable PostgreSQL 17 cluster in `backend/.local/pg` on port 54329, used only for the database-level engine tests. It never touches other Postgres servers on the machine. The PostgREST part of that script is unused.
 - **Database tests:** `npm run test:db` (PGlite, in memory) and `npm run test:db:pg` (real Postgres 17, rebuilt before every run). Both pass.
 - **API tests:** Vitest against the backend running locally and connected to the Supabase project. Test users are created through Supabase Auth's admin API (secret key) and sign in for real, so the tokens are genuine. Email delivery (sign-up confirmation, password reset) is checked by hand.
+- **API smoke test:** `npm run test:api:smoke` (`backend/scripts/api-smoke.mjs`) runs against the local backend connected to the Supabase project: happy path plus 14 cross-tenant probes, with its own `zz-test-` rows removed afterwards.
 - **Load tests:** k6. **Browser tests:** Playwright with the installed Edge.

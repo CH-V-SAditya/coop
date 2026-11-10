@@ -5,36 +5,18 @@
 //    every API route with an id in its path then fails with an HTML 500.
 // 2. Starts `next dev`, then requests every API route once so they are compiled
 //    up front. Otherwise the first click on each screen waits ~3s for Turbopack.
-import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { spawn } from 'node:child_process'
+import { readdirSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { ensureCleanNext } from './ensure-clean-next.mjs'
 
 // fileURLToPath decodes %20, so folders with spaces ("NxtWave Projects") work.
 const root = fileURLToPath(new URL('..', import.meta.url))
 const port = process.env.PORT ?? '4000'
-const nextDir = join(root, 'node_modules', 'next')
 
 // 1. Repair a patched Next.js -------------------------------------------------
-const patched = ['dist/server/lib/start-server.js', 'dist/compiled/webpack/bundle5.js']
-  .map((f) => join(nextDir, f))
-  .some((f) => existsSync(f) && readFileSync(f, 'utf8').includes('build-hook-start'))
-
-if (patched) {
-  console.log('\n⚠  Next.js in node_modules was modified by the Console Ninja VS Code extension.')
-  console.log('   This crashes the API with "Jest worker encountered 2 child process exceptions".')
-  console.log('   Reinstalling a clean copy of Next.js... (disable Console Ninja for this workspace to stop it coming back)\n')
-  rmSync(nextDir, { recursive: true, force: true })
-  // npm sets npm_execpath to its own CLI script; running it with node avoids cmd.exe entirely.
-  const npmCli = process.env.npm_execpath
-  const r = npmCli
-    ? spawnSync(process.execPath, [npmCli, 'install', '--no-audit', '--no-fund'], { cwd: root, stdio: 'inherit' })
-    : spawnSync('npm install --no-audit --no-fund', { cwd: root, stdio: 'inherit', shell: true })
-  if (r.status !== 0) {
-    console.error('\nCould not reinstall Next.js. Run `npm install` in the backend folder, then try again.')
-    process.exit(r.status ?? 1)
-  }
-}
+const nextDir = ensureCleanNext(root)
 
 // 2. Start next dev and warm up every route ------------------------------------
 // Run Next's CLI with node directly: no shell and no npx, so spaces in the path can't break it.
